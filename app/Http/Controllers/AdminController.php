@@ -49,6 +49,7 @@ class AdminController extends Controller
     public function edit_brand($id)
     {
         $brand = Brand::find($id);
+        return view('admin.brand-edit', compact('brand'));
     }
 
     public function GenerateBrandThumbnailsImage($image, $image_name)

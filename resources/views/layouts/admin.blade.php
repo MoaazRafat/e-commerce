@@ -23,7 +23,7 @@
     <link rel="apple-touch-icon-precomposed" href="{{asset('images/favicon.ico')}}">
     <link rel="stylesheet" type="text/css" href="{{asset('css/sweetalert.min.css')}}">
     <link rel="stylesheet" type="text/css" href="{{asset('css/custom.css')}}">
-        @stack("styles")
+    @stack("styles")
 </head>
 
 <body class="body">
@@ -41,7 +41,8 @@
                     <div class="box-logo">
                         <a href="{{route('home.index')}}" id="site-logo-inner">
                             <img class="" id="logo_header" alt="" src="{{asset('images/logo/logo.png')}}"
-                                data-light="{{asset('images/logo/logo.png')}}" data-dark="{{asset('images/logo/logo.png')}}">
+                                data-light="{{asset('images/logo/logo.png')}}"
+                                data-dark="{{asset('images/logo/logo.png')}}">
                         </a>
                         <div class="button-show-hide">
                             <i class="icon-menu-left"></i>
@@ -123,7 +124,7 @@
                                     </a>
                                     <ul class="sub-menu">
                                         <li class="sub-menu-item">
-                                            <a href="orders.html" class="">
+                                            <a href="{{route('admin.orders')}}" class="">
                                                 <div class="text">Orders</div>
                                             </a>
                                         </li>
@@ -135,13 +136,13 @@
                                     </ul>
                                 </li>
                                 <li class="menu-item">
-                                    <a href="slider.html" class="">
+                                    <a href="{{route('admin.slides')}}" class="">
                                         <div class="icon"><i class="icon-image"></i></div>
-                                        <div class="text">Slider</div>
+                                        <div class="text">Slides</div>
                                     </a>
                                 </li>
                                 <li class="menu-item">
-                                    <a href="coupons.html" class="">
+                                    <a href="{{route('admin.coupons')}}" class="">
                                         <div class="icon"><i class="icon-grid"></i></div>
                                         <div class="text">Coupons</div>
                                     </a>
@@ -164,7 +165,8 @@
                                 <li class="menu-item">
                                     <form method="POST" action="{{ route('logout') }}" id="logout-form">
                                         @csrf
-                                        <a href="{{ route('logout') }}" class="" onclick="event.preventDefault();document.getElementById('logout-form').submit();">
+                                        <a href="{{ route('logout') }}" class=""
+                                            onclick="event.preventDefault();document.getElementById('logout-form').submit();">
                                             <div class="icon"><i class="icon-log-out"></i></div>
                                             <div class="text">Logout</div>
                                         </a>
@@ -182,8 +184,9 @@
                             <div class="header-left">
                                 <a href="index-2.html">
                                     <img class="" id="logo_header_mobile" alt="" src="{{asset('images/logo/logo.png')}}"
-                                        data-light="{{asset('images/logo/logo.png')}}" data-dark="{{asset('images/logo/logo.png')}}"
-                                        data-width="154px" data-height="52px" data-retina="{{asset('images/logo/logo.png')}}">
+                                        data-light="{{asset('images/logo/logo.png')}}"
+                                        data-dark="{{asset('images/logo/logo.png')}}" data-width="154px"
+                                        data-height="52px" data-retina="{{asset('images/logo/logo.png')}}">
                                 </a>
                                 <div class="button-show-hide">
                                     <i class="icon-menu-left"></i>
@@ -400,8 +403,9 @@
                                                     <img src="{{asset('images/avatar/user-1.png')}}" alt="">
                                                 </span>
                                                 <span class="flex flex-column">
-                                                    <span class="body-title mb-2">Kristin Watson</span>
-                                                    <span class="text-tiny">Admin</span>
+                                                    <span class="body-title mb-2">{{Auth::user()->name}}</span>
+                                                    <span class="text-tiny">{{Auth::user()->utype === 'ADM' ? 'Admin' :
+                                                        'User'}}</span>
                                                 </span>
                                             </span>
                                         </button>
@@ -443,7 +447,9 @@
                                             <li>
                                                 <form method="POST" action="{{ route('logout') }}" id="logout-form">
                                                     @csrf
-                                                    <a href="{{route('logout')}}" onclick="event.preventDefault();document.getElementById('logout-form').submit();" class="user-item">
+                                                    <a href="{{route('logout')}}"
+                                                        onclick="event.preventDefault();document.getElementById('logout-form').submit();"
+                                                        class="user-item">
                                                         <div class="icon">
                                                             <i class="icon-log-out"></i>
                                                         </div>

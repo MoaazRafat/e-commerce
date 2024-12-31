@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Contact;
 use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -12,6 +13,7 @@ use App\Models\Slide;
 use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Intervention\Image\Laravel\Facades\Image;
@@ -20,7 +22,39 @@ class AdminController extends Controller
 {
     public function index()
     {
-        return view('admin.index');
+        $orders = Order::orderBy('created_at', 'DESC')->get()->take(10);
+        $dashboardData = DB::select("select sum(total) As TotalAmount,
+                                    sum(if(status='ordered',total,0)) As TotalOrderedAmount,
+                                    sum(if(status='delivered',total,0)) As TotalDeliveredAmount,
+                                    sum(if(status='canceled',total,0)) As TotalCanceledAmount,
+                                    Count(*) As Total,
+                                    sum(if(status='ordered',1,0)) As TotalOrdered,
+                                    sum(if(status='delivered',1,0)) As TotalDelivered,
+                                    sum(if(status='canceled',1,0)) As TotalCanceled
+                                    From orders
+                                    ");
+        $monthlyData = DB::select("SELECT M.id As MonthNo , M.name As MonthName,
+                                IFNULL(D.TotalAmount,0) As TotalAmount,
+                                IFNULL(D.TotalOrderedAmount,0) As TotalOrderedAmount,
+                                IFNULL(D.TotalDeliveredAmount,0) As TotalDeliveredAmount,
+                                IFNULL(D.TotalCanceledAmount,0) As TotalCanceledAmount FROM month_names M
+                                LEFT JOIN (select DATE_FORMAT(created_at,'%b') As MonthName,
+                                MONTH(created_at) As MonthNo,
+                                sum(total) As TotalAmount,
+                                sum(if(status='ordered',total,0)) As TotalOrderedAmount,
+                                sum(if(status='delivered',total,0)) As TotalDeliveredAmount,
+                                sum(if(status='canceled',total,0)) As TotalCanceledAmount
+                                From orders WHERE YEAR(created_at)=YEAR(NOW()) GROUP BY YEAR(created_at), MONTH(created_at), DATE_FORMAT(created_at, '%b')
+                                Order By MONTH(created_at)) D On D.MonthNo=M.id ");
+        $AmountM = implode(',', collect($monthlyData)->pluck('TotalAmount')->toArray());
+        $OrderedAmountM = implode(',', collect($monthlyData)->pluck('TotalOrderedAmount')->toArray());
+        $DeliveredAmountM = implode(',', collect($monthlyData)->pluck('TotalDeliveredAmount')->toArray());
+        $CanceledAmountM = implode(',', collect($monthlyData)->pluck('TotalCanceledAmount')->toArray());
+        $TotalAmount = collect($monthlyData)->sum('TotalAmount');
+        $TotalOrderedAmount = collect($monthlyData)->sum('TotalOrderedAmount');
+        $TotalDeliveredAmount = collect($monthlyData)->sum('TotalDeliveredAmount');
+        $TotalCanceledAmount = collect($monthlyData)->sum('TotalCanceledAmount');
+        return view('admin.index', compact('orders', 'dashboardData', 'AmountM', 'OrderedAmountM', 'DeliveredAmountM', 'CanceledAmountM', 'TotalAmount', 'TotalOrderedAmount', 'TotalDeliveredAmount', 'TotalCanceledAmount'));
     }
 
     public function brands()
@@ -599,5 +633,24 @@ class AdminController extends Controller
         }
         $slide->delete();
         return redirect()->route('admin.slides')->with('status', 'Slide Has Been Deleted Successfully!');
+    }
+
+    public function contacts()
+    {
+        $contacts = Contact::orderBy('created_at', 'DESC')->paginate(10);
+        return view('admin.contacts', compact('contacts'));
+    }
+
+    public function delete_contact($id)
+    {
+        Contact::find($id)->delete();
+        return redirect()->route('admin.contacts')->with('status', 'Contact Has Been Deleted Successfully!');
+    }
+
+    public function search(Request $request)
+    {
+        $query = $request->input('query');
+        $results = Product::where('name', 'like', "%{$query}%")->get()->take(8);
+        return response()->json($results);
     }
 }

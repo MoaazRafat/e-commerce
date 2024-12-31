@@ -40,6 +40,10 @@ Route::delete('/wishlist/remove/{rowId}', [WishlistController::class, 'remove_it
 Route::delete('/wishlist/empty', [WishlistController::class, 'empty_wishlist'])->name('wishlist.empty');
 Route::post('/wishlist/move-to-cart/{rowId}', [WishlistController::class, 'move_to_cart'])->name('wishlist.item.move');
 
+Route::get('/contact-us', [HomeController::class, 'contact'])->name('contact');
+Route::post('/contact/store', [HomeController::class, 'store_contact'])->name('contact.store');
+
+Route::get('/search', [HomeController::class, 'search'])->name('home.search');
 
 Route::middleware('auth')->group(function ()
 {
@@ -90,4 +94,9 @@ Route::middleware(['auth', AuthAdmin::class])->group(function ()
     Route::get('admin/slide/edit/{id}', [AdminController::class, 'edit_slide'])->name('admin.slide.edit');
     Route::put('admin/slide/update', [AdminController::class, 'update_slide'])->name('admin.slide.update');
     Route::delete('admin/slide/delete/{id}', [AdminController::class, 'delete_slide'])->name('admin.slide.delete');
+
+    Route::get('/admin/contact', [AdminController::class, 'contacts'])->name('admin.contacts');
+    Route::delete('/admin/contact/delete/{id}', [AdminController::class, 'delete_contact'])->name('admin.contact.delete');
+
+    Route::get('/admin/search', [AdminController::class, 'search'])->name('admin.search');
 });

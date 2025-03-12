@@ -11,8 +11,10 @@
         "php": "^8.2",
         "intervention/image-laravel": "^1.2",
         "laravel/framework": "^11.9",
+        "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
         "laravel/ui": "^4.5",
+        "stripe/stripe-php": "^16.6",
         "surfsidemedia/shoppingcart": "^1.0"
     },
     "require-dev": {

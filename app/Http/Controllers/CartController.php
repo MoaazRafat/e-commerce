@@ -11,6 +11,9 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Stripe\Exception\ApiErrorException;
+use Stripe\PaymentIntent;
+use Stripe\Stripe;
 use Surfsidemedia\Shoppingcart\Facades\Cart;
 
 class CartController extends Controller
@@ -192,7 +195,25 @@ class CartController extends Controller
 
         if ($request->mode == 'card')
         {
-            //
+            Stripe::setApiKey(env('STRIPE_SECRET'));
+
+            try
+            {
+                // Create a PaymentIntent with the order amount and currency
+                $paymentIntent = PaymentIntent::create([
+                    'amount' => 5000, // Amount in cents (5000 = $50.00)
+                    'currency' => 'usd',
+                    'payment_method_types' => ['card'],
+                ]);
+
+                return response()->json([
+                    'clientSecret' => $paymentIntent->client_secret
+                ]);
+            }
+            catch (ApiErrorException $e)
+            {
+                return response()->json(['error' => $e->getMessage()]);
+            }
         }
         elseif ($request->mode == 'paypal')
         {

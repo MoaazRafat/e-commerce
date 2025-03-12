@@ -1,5 +1,98 @@
 @extends('layouts.app')
 @section('content')
+<style>
+  #row-paymentmode {
+    display: -ms-flexbox;
+    /* IE10 */
+    display: flex;
+    -ms-flex-wrap: wrap;
+    /* IE10 */
+    flex-wrap: wrap;
+    margin: 0 -16px;
+  }
+
+  .col-25 {
+    -ms-flex: 25%;
+    /* IE10 */
+    flex: 25%;
+  }
+
+  .col-50 {
+    -ms-flex: 50%;
+    /* IE10 */
+    flex: 50%;
+  }
+
+  .col-75 {
+    -ms-flex: 75%;
+    /* IE10 */
+    flex: 75%;
+  }
+
+  .col-25,
+  .col-50,
+  .col-75 {
+    padding: 0 16px;
+  }
+
+  #container {
+    background-color: #f2f2f2;
+    padding: 5px 20px 15px 20px;
+    border: 1px solid lightgrey;
+    border-radius: 3px;
+  }
+
+  input[type=text] {
+    width: 100%;
+    margin-bottom: 20px;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+  }
+
+  label {
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .icon-container {
+    margin-bottom: 20px;
+    padding: 7px 0;
+    font-size: 24px;
+  }
+
+  .btn {
+    background-color: #04AA6D;
+    color: white;
+    padding: 12px;
+    margin: 10px 0;
+    border: none;
+    width: 100%;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 17px;
+  }
+
+  .btn:hover {
+    background-color: #45a049;
+  }
+
+  span.price {
+    float: right;
+    color: grey;
+  }
+
+  /* Responsive layout - when the screen is less than 800px wide, make the two columns stack on top of each other instead of next to each other (and change the direction - make the "cart" column go on top) */
+  @media (max-width: 800px) {
+    .row {
+      flex-direction: column-reverse;
+    }
+
+    .col-25 {
+      margin-bottom: 20px;
+    }
+  }
+</style>
 <main class="pt-90">
   <div class="mb-4 pb-4"></div>
   <section class="shop-checkout container">
@@ -214,13 +307,14 @@
                 <input class="form-check-input form-check-input_fill" type="radio" name="mode" id="mode1" value="card">
                 <label class="form-check-label" for="mode1"> Debit Or Credit Card </label>
               </div>
-              <div class="form-check">
+              {{-- <div class="form-check">
                 <input class="form-check-input form-check-input_fill" type="radio" name="mode" id="mode2"
                   value="paypal">
                 <label class="form-check-label" for="mode2"> Paypal </label>
-              </div>
+              </div> --}}
               <div class="form-check">
-                <input class="form-check-input form-check-input_fill" type="radio" name="mode" id="mode3" value="cod">
+                <input class="form-check-input form-check-input_fill" type="radio" name="mode" id="mode3" value="cod"
+                  checked>
                 <label class="form-check-label" for="mode3"> Cash on delivery </label>
               </div>
               <div class="policy-text">
@@ -229,11 +323,101 @@
                   policy</a>.
               </div>
             </div>
-            <button class="btn btn-primary btn-checkout" type="submit">PLACE ORDER</button>
+            {{-- <div class="col-md-6"> --}}
+              <div id="credit-card-info" style="display:none;">
+                <h3>Credit Card Payment</h3>
+                <div id="card-element">
+                  <!-- Stripe's Card Element will go here -->
+                  <div class="row" id="row-paymentmode">
+                    <div class="col-75">
+                      <div class="container" id="container">
+                        <form action="/action_page.php">
+
+                          <div class="row">
+
+                            <div class="col-50">
+                              <h3>Payment</h3>
+                              <label for="fname">Accepted Cards</label>
+                              <div class="icon-container">
+                                <i class="fa fa-cc-visa" style="color:navy;"></i>
+                                <i class="fa fa-cc-amex" style="color:blue;"></i>
+                                <i class="fa fa-cc-mastercard" style="color:red;"></i>
+                                <i class="fa fa-cc-discover" style="color:orange;"></i>
+                              </div>
+                              <label for="cname">Name on Card</label>
+                              <input type="text" id="cname" name="cardname" placeholder="John More Doe">
+                              <label for="ccnum">Credit card number</label>
+                              <input type="text" id="ccnum" name="cardnumber" placeholder="1111-2222-3333-4444">
+                              <label for="expmonth">Exp Month</label>
+                              <input type="text" id="expmonth" name="expmonth" placeholder="September">
+
+                              <div class="row">
+                                <div class="col-50">
+                                  <label for="expyear">Exp Year</label>
+                                  <input type="text" id="expyear" name="expyear" placeholder="2018">
+                                </div>
+                                <div class="col-50">
+                                  <label for="cvv">CVV</label>
+                                  <input type="text" id="cvv" name="cvv" placeholder="352">
+                                </div>
+                              </div>
+                            </div>
+
+                          </div>
+                          <label>
+                            <input type="checkbox" checked="checked" name="sameadr"> Shipping address same as billing
+                          </label>
+                          {{-- <input type="submit" value="Continue to checkout" class="btn"> --}}
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div id="card-errors" role="alert"></div>
+                {{-- <button type="submit" id="submit-btn">Pay</button> --}}
+              </div>
+
+              <!-- Cash on Delivery Info (Visible by default) -->
+              <div id="cod-info">
+                <h3>Cash on Delivery</h3>
+                <p>You selected Cash on Delivery.</p>
+              </div>
+
+              {{--
+            </div> --}}
+            <div class="row">
+              <button class="btn btn-primary btn-checkout" type="submit" id="submit-btn">PLACE ORDER</button>
+            </div>
           </div>
         </div>
-      </div>
     </form>
   </section>
 </main>
+
+@push('scripts')
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+  $(document).ready(function() {
+        // Initially hide the credit card form and show the COD form
+        $('#credit-card-info').hide();
+        $('#cod-info').show();
+
+        // Listen for change event on payment method radio buttons
+        $('input[name="mode"]').on('change', function() {
+            if ($(this).val() == 'card') {
+                // If Credit Card is selected, show the credit card form and hide COD info
+                $('#credit-card-info').show();
+                $('#cod-info').hide();
+            } else {
+                // If Cash on Delivery is selected, show COD info and hide credit card form
+                $('#credit-card-info').hide();
+                $('#cod-info').show();
+            }
+        });
+    });
+</script>
+
+
+@endpush
 @endsection

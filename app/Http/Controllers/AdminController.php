@@ -653,4 +653,9 @@ class AdminController extends Controller
         $results = Product::where('name', 'like', "%{$query}%")->get()->take(8);
         return response()->json($results);
     }
+
+    public function settings()
+    {
+        return view('admin.settings');
+    }
 }

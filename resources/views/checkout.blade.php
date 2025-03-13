@@ -120,7 +120,7 @@
         </span>
       </a>
     </div>
-    <form name="checkout-form" action="{{route('cart.place.order')}}" method="post">
+    <form name="checkout-form" action="{{route('cart.place.order')}}" method="post" id="payment-form">
       @csrf
       <div class="checkout-form">
         <div class="billing-info__wrapper">
@@ -324,7 +324,7 @@
               </div>
             </div>
             {{-- <div class="col-md-6"> --}}
-              <div id="credit-card-info" style="display:none;">
+              <div id="cc-info" style="display:none;">
                 <h3>Credit Card Payment</h3>
                 <div id="card-element">
                   <!-- Stripe's Card Element will go here -->
@@ -332,11 +332,16 @@
                     <div class="col-75">
                       <div class="container" id="container">
                         <form action="/action_page.php">
+                          <input type="hidden" name="order_id" value='12345'>
 
                           <div class="row">
 
                             <div class="col-50">
                               <h3>Payment</h3>
+                              @if (session()->has('stripe_error'))
+                              <span class="text-danger"
+                                style="color:#f90505 !important;">{{session()->get('stripe_error')}}</span>
+                              @endif
                               <label for="fname">Accepted Cards</label>
                               <div class="icon-container">
                                 <i class="fa fa-cc-visa" style="color:navy;"></i>
@@ -346,19 +351,33 @@
                               </div>
                               <label for="cname">Name on Card</label>
                               <input type="text" id="cname" name="cardname" placeholder="John More Doe">
+                              @error('cardname')
+                              <span class="text-danger" style="color:#f90505 !important;">{{$message}}</span>
+                              @enderror
                               <label for="ccnum">Credit card number</label>
                               <input type="text" id="ccnum" name="cardnumber" placeholder="1111-2222-3333-4444">
+                              @error('cardnumber')
+                              <span class="text-danger" style="color:#f90505 !important;">{{$message}}</span>
+                              @enderror
                               <label for="expmonth">Exp Month</label>
                               <input type="text" id="expmonth" name="expmonth" placeholder="September">
-
+                              @error('expmonth')
+                              <span class="text-danger" style="color:#f90505 !important;">{{$message}}</span>
+                              @enderror
                               <div class="row">
                                 <div class="col-50">
                                   <label for="expyear">Exp Year</label>
                                   <input type="text" id="expyear" name="expyear" placeholder="2018">
+                                  @error('expyear')
+                                  <span class="text-danger" style="color:#f90505 !important;">{{$message}}</span>
+                                  @enderror
                                 </div>
                                 <div class="col-50">
-                                  <label for="cvv">CVV</label>
-                                  <input type="text" id="cvv" name="cvv" placeholder="352">
+                                  <label for="cvc">CVC</label>
+                                  <input type="text" id="cvc" name="cvc" placeholder="352">
+                                  @error('cvc')
+                                  <span class="text-danger" style="color:#f90505 !important;">{{$message}}</span>
+                                  @enderror
                                 </div>
                               </div>
                             </div>
@@ -396,26 +415,58 @@
 
 @push('scripts')
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://js.stripe.com/v3/"></script>
+
 
 <script>
   $(document).ready(function() {
         // Initially hide the credit card form and show the COD form
-        $('#credit-card-info').hide();
+        $('#cc-info').hide();
         $('#cod-info').show();
 
         // Listen for change event on payment method radio buttons
         $('input[name="mode"]').on('change', function() {
             if ($(this).val() == 'card') {
                 // If Credit Card is selected, show the credit card form and hide COD info
-                $('#credit-card-info').show();
+                $('#cc-info').show();
                 $('#cod-info').hide();
             } else {
                 // If Cash on Delivery is selected, show COD info and hide credit card form
-                $('#credit-card-info').hide();
+                $('#cc-info').hide();
                 $('#cod-info').show();
             }
         });
     });
+         // Set up Stripe and Elements
+         var stripe = Stripe('{{ config('services.stripe.key') }}');  // Your publishable key
+        var elements = stripe.elements();
+
+        // Create an instance of the card Element
+        var card = elements.create('card');
+        card.mount('#ccnum'); // Mount it to the DOM
+
+        // Handle form submission
+        var form = document.getElementById('payment-form');
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            // Create a token from the card element
+            stripe.createToken(card).then(function (result) {
+                if (result.error) {
+                    // Handle error (display error message to the user)
+                    alert(result.error.message);
+                } else {
+                    // Add the token to the form and submit
+                    var tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = 'stripeToken';
+                    tokenInput.value = result.token.id;
+                    form.appendChild(tokenInput);
+
+                    form.submit(); // Now submit the form with the token
+                }
+            });
+        });
 </script>
 
 

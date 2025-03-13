@@ -8,12 +8,16 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Transaction;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Stripe\Charge;
 use Stripe\Exception\ApiErrorException;
 use Stripe\PaymentIntent;
 use Stripe\Stripe;
+use Stripe\StripeClient;
+use Stripe\Token;
 use Surfsidemedia\Shoppingcart\Facades\Cart;
 
 class CartController extends Controller
@@ -195,25 +199,97 @@ class CartController extends Controller
 
         if ($request->mode == 'card')
         {
-            Stripe::setApiKey(env('STRIPE_SECRET'));
 
+            $request->validate(
+                [
+                    'cardname' => 'required',
+                    'cardnumber' => 'required|numeric',
+                    'expmonth' => 'required|numeric',
+                    'expyear' => 'required|numeric',
+                    'cvc' => 'required|numeric',
+                ]
+            );
+
+
+            Stripe::setApiKey(env('STRIPE_SECRET'));
             try
             {
-                // Create a PaymentIntent with the order amount and currency
-                $paymentIntent = PaymentIntent::create([
-                    'amount' => 5000, // Amount in cents (5000 = $50.00)
+                $token = Token::create([
+                    'card' => [
+                        'number' => $request->cardnumber,
+                        'exp_month' => $request->expmonth,
+                        'exp_year' => $request->expyear,
+                        'cvc' => $request->cvc,
+                    ],
+                ]);
+                if (!isset($token['id']))
+                {
+                    session()->flash('stripe_error', 'The stripe token is not generated correctly');
+                }
+                // $customer = $stripe->customers()->create([
+                //     'name' => $request->name,
+                //     'email' => $request->email,
+                //     'phone' => $request->phone,
+                //     'zip' => $request->zip,
+                //     'state' => $request->state,
+                //     'city' => $request->city,
+                //     'address' => $request->address,
+                //     'source' => $token->id,
+                //     'shipping' => [
+                //         'name' => $request->name,
+                //         'zip' => $request->zip,
+                //         'state' => $request->state,
+                //         'city' => $request->city,
+                //         'address' => $request->address,
+                //         'source' => $token->id,
+                //     ]
+                // ]);
+                $charge = Charge::create([
+                    // 'customer' => $customer->id,
+                    'amount' => session()->get('checkout')['total'], // Convert to cents
                     'currency' => 'usd',
-                    'payment_method_types' => ['card'],
+                    'source' => $request->stripeToken, // Token from the Stripe frontend
+                    'description' => 'Payment for Order ' . $request->order_id,
                 ]);
-
-                return response()->json([
-                    'clientSecret' => $paymentIntent->client_secret
-                ]);
+                if ($charge['status'] == 'succeeded')
+                {
+                    $this->makeTransaction($order->id, 'approved', 'card');
+                    Cart::instance('cart')->destroy();
+                    Session::forget('coupon');
+                    Session::forget('discounts');
+                    Session::forget('checkout');
+                    Session::put('order_id', $order->id);
+                    return redirect()->route('cart.order.confirmation');
+                }
+                else
+                {
+                    session()->flash('stripe_error', 'Error in transaction!');
+                }
             }
-            catch (ApiErrorException $e)
+            catch (Exception $e)
             {
-                return response()->json(['error' => $e->getMessage()]);
+                session()->flash('stripe_error', $e->getMessage());
             }
+
+
+            // Stripe::setApiKey(env('STRIPE_SECRET'))
+            // try
+            // {
+            //     // Create a PaymentIntent with the order amount and currency
+            //     $paymentIntent = PaymentIntent::create([
+            //         'amount' => 5000, // Amount in cents (5000 = $50.00)
+            //         'currency' => 'usd',
+            //         'payment_method_types' => ['card'],
+            //     ]);
+
+            //     return response()->json([
+            //         'clientSecret' => $paymentIntent->client_secret
+            //     ]);
+            // }
+            // catch (ApiErrorException $e)
+            // {
+            //     return response()->json(['error' => $e->getMessage()]);
+            // }
         }
         elseif ($request->mode == 'paypal')
         {
@@ -221,20 +297,24 @@ class CartController extends Controller
         }
         elseif ($request->mode == 'cod')
         {
-            $transaction = new Transaction();
-            $transaction->user_id = $user_id;
-            $transaction->order_id = $order->id;
-            $transaction->mode = $request->mode;
-            $transaction->status = 'pending';
-            $transaction->save();
+            $this->makeTransaction($order->id, 'pending', 'cod');
+            Cart::instance('cart')->destroy();
+            Session::forget('coupon');
+            Session::forget('discounts');
+            Session::forget('checkout');
+            Session::put('order_id', $order->id);
+            return redirect()->route('cart.order.confirmation');
         }
+    }
 
-        Cart::instance('cart')->destroy();
-        Session::forget('coupon');
-        Session::forget('discounts');
-        Session::forget('checkout');
-        Session::put('order_id', $order->id);
-        return redirect()->route('cart.order.confirmation');
+    public function makeTransaction($order_id, $status, $mode)
+    {
+        $transaction = new Transaction();
+        $transaction->user_id = Auth::user()->id;
+        $transaction->order_id = $order_id;
+        $transaction->mode = $mode;
+        $transaction->status = $status;
+        $transaction->save();
     }
 
     public function setAmountforCheckout()
